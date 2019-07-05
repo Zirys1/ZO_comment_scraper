@@ -8,8 +8,6 @@ library(xlsx)
 
 url <- "https://profile.zeit.de/2483981"
 
-## include a wait function so i do not get blocked
-
 #### Get the links to get all comments based on base url ####
 get_page_urls <- function(url){
   html_document <- NULL
@@ -66,13 +64,23 @@ scrape_zo_article <- function(url) {
   
   
   #### Strip number of comments ####
-  n_comments_xpath <- ".user-profile__statistics"
+  n_comments_xpath <- ".user-profile__statistics+ .user-profile__statistics"
   n_comments <- html_document %>%
     html_node(css = n_comments_xpath) %>%
     html_text(trim = T) %>% 
     gsub("\\ .*$", "", ., perl = T) %>%   # delete everything after including whitespace
     gsub(".", "", ., fixed = T) %>% # to use dots as commas (because its a German site)
     as.numeric(.)
+  
+  if(is.na(n_comments)){
+    n_comments_xpath <- ".user-profile__statistics"
+    n_comments <- html_document %>%
+      html_node(css = n_comments_xpath) %>%
+      html_text(trim = T) %>% 
+      gsub("\\ .*$", "", ., perl = T) %>%   # delete everything after including whitespace
+      gsub(".", "", ., fixed = T) %>% # to use dots as commas (because its a German site)
+      as.numeric(.)
+  }
   
   
   #### Strip username ####
@@ -83,9 +91,6 @@ scrape_zo_article <- function(url) {
     gsub("\\|.*$", "", ., perl = T) %>%  # delete everything after including |
     gsub("[ \t]+$", "", .) %>%  # strip trailing whitespace
     as.character(.)
-  
-  
-  
   
   
   ### Strip headers of comments ####   
@@ -177,7 +182,7 @@ scrape_zo_article <- function(url) {
 
 links <- get_page_urls(url)
 articles <- data.frame()
-for (i in 1:length(links)) {
+for (i in 1:length(links[1:20])) {
   cat("Downloading", i, "of", length(links), "URL:", links[i], "\n")
   Sys.sleep(5)
   if((i %% 10) == 0){
